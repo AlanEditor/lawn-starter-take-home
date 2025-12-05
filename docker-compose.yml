@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  php:
+    build: ./docker/php
+    container_name: swapi-php
+    working_dir: /var/www/html
+    volumes:
+      - ./api:/var/www/html
+      - ./api/vendor:/var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=swapi
+      - DB_USERNAME=swapi
+      - DB_PASSWORD=swapi
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: >
+      sh -c "composer install --prefer-dist --no-interaction && php artisan migrate --force && php-fpm"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan migrate:status >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app-network
+
+  nginx:
+    build: ./docker/nginx
+    container_name: swapi-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api:/var/www/html
+    depends_on:
+      - php
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: swapi-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8080/api
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: swapi-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: swapi
+      MYSQL_USER: swapi
+      MYSQL_PASSWORD: swapi
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: swapi-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  scheduler:
+    build: ./docker/php
+    container_name: swapi-scheduler
+    working_dir: /var/www/html
+    volumes:
+      - ./api:/var/www/html
+      - ./api/vendor:/var/www/html/vendor
+    environment:
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      php:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  queue:
+    build: ./docker/php
+    container_name: swapi-queue
+    working_dir: /var/www/html
+    volumes:
+      - ./api:/var/www/html
+      - ./api/vendor:/var/www/html/vendor
+    environment:
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
+    command: ["php", "artisan", "queue:work", "--tries=3"]
+    depends_on:
+      php:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
