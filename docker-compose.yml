@@ -111,7 +111,7 @@ services:
     environment:
       - DB_HOST=mysql
       - REDIS_HOST=redis
-    command: ["php", "artisan", "schedule:work"]
+    command: ["php", "artisan", "schedule:run"]
     depends_on:
       php:
         condition: service_healthy
