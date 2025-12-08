@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Actions;
+namespace App\Http\Actions;
 
-use App\Http\Actions\GetLatestMetricsAction;
 use App\Models\ApiCallLog;
 use App\Models\MetricSummary;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +19,7 @@ class CalculateMetricsAction
         }
 
         $logQuery = self::getRelevantLogs($period['start'], $period['end']);
+
         if ($logQuery->doesntExist()) {
             return null;
         }
@@ -35,7 +35,6 @@ class CalculateMetricsAction
         );
     }
 
-
     private static function getSamplingPeriod(): array
     {
         $lastMetric = GetLatestMetricsAction::execute();
@@ -43,6 +42,7 @@ class CalculateMetricsAction
         $samplingStart = $lastMetric ?
             $lastMetric->sampling_end :
             ApiCallLog::query()->min('called_at');
+
 
         return [
             'start' => $samplingStart,
@@ -53,9 +53,9 @@ class CalculateMetricsAction
     private static function getRelevantLogs(string $samplingStart, Carbon $samplingEnd): Builder
     {
         return ApiCallLog::query()
-            ->where('called_at', '>', $samplingStart)
+            ->where('called_at', '>=', $samplingStart)
             ->where('called_at', '<=', $samplingEnd)
-            ->where('resource_type', 'people');
+            ->whereIn('resource_type', ['people', 'films']);
     }
 
     private static function persistMetrics(float $averageDuration, ?int $peakHour, string $samplingStart, Carbon $samplingEnd): MetricSummary
@@ -79,9 +79,9 @@ class CalculateMetricsAction
     {
         return DB::table('api_call_logs')
             ->selectRaw('HOUR(called_at) as hour, COUNT(*) as total')
-            ->where('called_at', '>', $samplingStart)
+            ->where('called_at', '>=', $samplingStart)
             ->where('called_at', '<=', $samplingEnd)
-            ->where('resource_type', 'people')
+            ->whereIn('resource_type', ['people', 'films'])
             ->groupBy('hour')
             ->orderByDesc('total')
             ->value('hour');
