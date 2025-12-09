@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #ededed;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,11 +23,9 @@ a:hover {
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #EDEDED;
 }
 
 h1 {
@@ -59,10 +57,7 @@ button:focus-visible {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+    min-height: 100vh;
 }
 
 @media (prefers-color-scheme: light) {
@@ -76,4 +71,8 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
 }
