@@ -175,14 +175,6 @@ docker-compose.yml
 
 ---
 
-# Running Tests (Laravel)
-
-```bash
-docker exec -it swapi-php php artisan test
-```
-
----
-
 # Automatic Statistics
 
 A scheduled job runs every **5 minutes** to recalculate:
