@@ -48,8 +48,8 @@ The goal is to implement a complete application that:
 After cloning the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/swapi-takehome.git
-cd swapi-takehome
+git clone https://github.com/AlanEditor/lawn-starter-take-home.git
+cd lawn-starter-take-home
 
 # Make all scripts executable
 chmod +x *.sh
